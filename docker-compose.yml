@@ -1,0 +1,68 @@
+services:
+  # Serviço para o MySQL
+  db:
+    image: mysql:5.7
+    container_name: carros_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: carros
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - carros_network
+
+  # Serviço para o phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: carros_phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - carros_network
+
+  # Serviço para o Nginx
+  webserver:
+    image: nginx:alpine
+    container_name: carros_webserver
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - carros_network
+
+  # Serviço para o Laravel (PHP-FPM)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carros_app
+    restart: always
+    volumes:
+      - ./:/var/www/html
+      - /var/www/html/node_modules
+    networks:
+      - carros_network
+
+# Volumes e redes
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  carros_network:
+    driver: bridge
